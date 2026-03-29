@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eggplant Story Export</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fffaf2;
+      --ink: #2a211a;
+      --muted: #6b5a4d;
+      --line: #d7c5b4;
+      --accent: #b44f2b;
+      --accent-2: #2f6f63;
+      --shadow: 0 18px 45px rgba(86, 53, 29, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(180,79,43,0.18), transparent 28%),
+        linear-gradient(180deg, #f8f2ea 0%, #efe7dc 100%);
+      min-height: 100vh;
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+      gap: 24px;
+      padding: 24px;
+    }
+    .panel {
+      background: color-mix(in srgb, var(--panel) 92%, white);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 48px);
+    }
+    .side-head {
+      padding: 22px 20px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.68), rgba(255,255,255,0));
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 8px;
+    }
+    h1 {
+      font-size: 28px;
+      margin: 0 0 8px;
+      line-height: 1;
+    }
+    .subtext, .meta, .empty-note, .chip {
+      color: var(--muted);
+    }
+    .search-wrap {
+      padding: 0 20px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    input[type="search"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font: inherit;
+      background: rgba(255,255,255,0.85);
+    }
+    .scene-list {
+      overflow: auto;
+      padding: 10px;
+    }
+    .scene-row {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      background: transparent;
+      padding: 14px 12px;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: 140ms ease;
+    }
+    .scene-row:hover, .scene-row.active {
+      background: rgba(180,79,43,0.08);
+      border-color: rgba(180,79,43,0.18);
+      transform: translateY(-1px);
+    }
+    .scene-title {
+      font-size: 18px;
+      margin: 0 0 6px;
+    }
+    .scene-path {
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .scene-preview {
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .viewer {
+      min-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+    }
+    .viewer-head {
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid var(--line);
+      background:
+        radial-gradient(circle at top right, rgba(47,111,99,0.12), transparent 28%),
+        linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0));
+    }
+    .viewer-body {
+      padding: 24px 28px 30px;
+      overflow: auto;
+    }
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .jump-btn, .choice-btn, .small-btn {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+      transition: 140ms ease;
+    }
+    .jump-btn:hover, .choice-btn:hover, .small-btn:hover {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: rgba(180,79,43,0.07);
+      transform: translateY(-1px);
+    }
+    .choice-btn[disabled] {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+      background: rgba(0,0,0,0.03);
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(47,111,99,0.08);
+      border: 1px solid rgba(47,111,99,0.16);
+      font-size: 12px;
+    }
+    .chunk, .image-card, .note-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      background: rgba(255,255,255,0.6);
+      margin-bottom: 18px;
+    }
+    .chunk pre, .code-block {
+      white-space: pre-wrap;
+      margin: 0;
+      font-family: "Georgia", serif;
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    .code-block {
+      font-family: "Consolas", "Menlo", monospace;
+      font-size: 14px;
+      background: #231d18;
+      color: #f5efe7;
+      padding: 16px;
+      border-radius: 16px;
+      overflow: auto;
+    }
+    .meta {
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .section-title {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 24px 0 12px;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .image-frame {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 10px;
+      background: rgba(255,255,255,0.85);
+    }
+    .image-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      background: #efe5d8;
+    }
+    .image-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      word-break: break-word;
+    }
+    .choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .status-line {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    a { color: var(--accent-2); }
+    @media (max-width: 980px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+      .sidebar, .viewer {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="panel sidebar">
+      <div class="side-head">
+        <p class="eyebrow">Eggplant Export</p>
+        <h1>TiTS Script Browser</h1>
+        <p class="subtext" id="summaryText"></p>
+      </div>
+      <div class="search-wrap">
+        <input id="searchInput" type="search" placeholder="Search scenes, paths, or text">
+        <div class="status-line" id="filterCount"></div>
+      </div>
+      <div class="scene-list" id="sceneList"></div>
+    </aside>
+    <main class="panel viewer">
+      <div class="viewer-head">
+        <div class="top-actions">
+          <button class="small-btn" id="backButton" type="button">Back</button>
+          <button class="small-btn" id="homeButton" type="button">Jump To Start</button>
+          <a class="small-btn" href="./image-gallery.html">Image Gallery</a>
+        </div>
+        <div id="viewerTitleWrap"></div>
+      </div>
+      <div class="viewer-body" id="viewerBody"></div>
+    </main>
+  </div>
+  <script src="./data.js"></script>
+  <script>
+    const data = window.EGGPLANT_DATA;
+    const nodes = data.nodes;
+    const nodeMap = new Map(nodes.map(node => [node.id, node]));
+    const historyStack = [];
+    let currentNodeId = nodes.length ? nodes[0].id : null;
+
+    const sceneListEl = document.getElementById("sceneList");
+    const viewerBodyEl = document.getElementById("viewerBody");
+    const viewerTitleWrapEl = document.getElementById("viewerTitleWrap");
+    const searchInputEl = document.getElementById("searchInput");
+    const summaryTextEl = document.getElementById("summaryText");
+    const filterCountEl = document.getElementById("filterCount");
+    const backButtonEl = document.getElementById("backButton");
+    const homeButtonEl = document.getElementById("homeButton");
+
+    summaryTextEl.textContent = `${data.summary.scene_count.toLocaleString()} extracted scene nodes, ${data.summary.image_count.toLocaleString()} copied images`;
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function makeMetaChip(text) {
+      const span = document.createElement("span");
+      span.className = "chip";
+      span.textContent = text;
+      return span;
+    }
+
+    function renderSceneList() {
+      const query = searchInputEl.value.trim().toLowerCase();
+      const filtered = nodes.filter(node => {
+        if (!query) return true;
+        const haystack = [
+          node.title,
+          node.function_name,
+          node.relative_path,
+          ...(node.text_blocks || []).slice(0, 4).map(block => block.preview || block.template || ""),
+          ...(node.notes || []),
+        ].join(" ").toLowerCase();
+        return haystack.includes(query);
+      });
+
+      filterCountEl.textContent = `${filtered.length.toLocaleString()} scenes`;
+      sceneListEl.innerHTML = "";
+
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-note";
+        empty.textContent = "No matches yet.";
+        sceneListEl.appendChild(empty);
+        return;
+      }
+
+      for (const node of filtered) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "scene-row" + (node.id === currentNodeId ? " active" : "");
+        button.addEventListener("click", () => openNode(node.id, true));
+
+        const title = document.createElement("div");
+        title.className = "scene-title";
+        title.textContent = node.title || node.function_name;
+        button.appendChild(title);
+
+        const path = document.createElement("div");
+        path.className = "scene-path meta";
+        path.textContent = `${node.relative_path}:${node.start_line}`;
+        button.appendChild(path);
+
+        const preview = document.createElement("div");
+        preview.className = "scene-preview";
+        const firstText = (node.text_blocks || []).find(block => (block.preview || "").trim());
+        preview.textContent = firstText ? firstText.preview : (node.notes && node.notes[0]) || "No text in this node.";
+        button.appendChild(preview);
+
+        sceneListEl.appendChild(button);
+      }
+    }
+
+    function createChunk(block) {
+      const wrap = document.createElement("section");
+      wrap.className = block.kind === "code" ? "note-card" : "chunk";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const contextBits = (block.contexts || []).length ? ` · ${(block.contexts || []).join(" · ")}` : "";
+      meta.textContent = `${block.kind} · line ${block.line}${contextBits}`;
+      wrap.appendChild(meta);
+
+      if (block.kind === "code") {
+        const code = document.createElement("pre");
+        code.className = "code-block";
+        code.textContent = block.template;
+        wrap.appendChild(code);
+      } else {
+        const pre = document.createElement("pre");
+        pre.textContent = block.template;
+        wrap.appendChild(pre);
+      }
+
+      return wrap;
+    }
+
+    function createImageSection(images) {
+      const section = document.createElement("section");
+      const title = document.createElement("div");
+      title.className = "section-title";
+      title.textContent = "Images";
+      section.appendChild(title);
+
+      for (const image of images) {
+        const card = document.createElement("div");
+        card.className = "image-card";
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const labels = image.labels && image.labels.length ? image.labels.join(", ") : "Dynamic image call";
+        const contextBits = (image.contexts || []).length ? ` · ${(image.contexts || []).join(" · ")}` : "";
+        meta.textContent = `${image.kind} · ${labels} · line ${image.line}${contextBits}`;
+        card.appendChild(meta);
+
+        if (image.unresolved && image.unresolved.length) {
+          const unresolved = document.createElement("div");
+          unresolved.className = "status-line";
+          unresolved.textContent = `Dynamic refs: ${image.unresolved.join(", ")}`;
+          card.appendChild(unresolved);
+        }
+
+        const resolved = image.resolved || [];
+        if (!resolved.length) {
+          const none = document.createElement("div");
+          none.className = "status-line";
+          none.textContent = "No static image file matched this call.";
+          card.appendChild(none);
+        } else {
+          const grid = document.createElement("div");
+          grid.className = "image-grid";
+          for (const item of resolved) {
+            const frame = document.createElement("figure");
+            frame.className = "image-frame";
+
+            const img = document.createElement("img");
+            img.loading = "lazy";
+            img.src = item.export_path;
+            img.alt = item.symbol || item.path;
+            frame.appendChild(img);
+
+            const caption = document.createElement("figcaption");
+            caption.className = "image-caption";
+            caption.textContent = item.relative_image_path || item.path;
+            frame.appendChild(caption);
+            grid.appendChild(frame);
+          }
+          card.appendChild(grid);
+        }
+
+        section.appendChild(card);
+      }
+
+      return section;
+    }
+
+    function createChoicesSection(node) {
+      const section = document.createElement("section");
+      const title = document.createElement("div");
+      title.className = "section-title";
+      title.textContent = "Choices";
+      section.appendChild(title);
+
+      const choices = document.createElement("div");
+      choices.className = "choices";
+
+      for (const button of node.buttons || []) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.textContent = button.label;
+        if (button.disabled) {
+          btn.disabled = true;
+          btn.title = "Disabled in source";
+        } else if (button.target_id && nodeMap.has(button.target_id)) {
+          btn.addEventListener("click", () => openNode(button.target_id, true));
+        } else {
+          btn.addEventListener("click", () => alert("This choice points at game code that couldn't be mapped cleanly in the export."));
+        }
+        choices.appendChild(btn);
+      }
+
+      if (!(node.buttons || []).length) {
+        const none = document.createElement("div");
+        none.className = "status-line";
+        none.textContent = "No buttons were found in this node.";
+        section.appendChild(none);
+      } else {
+        section.appendChild(choices);
+      }
+
+      return section;
+    }
+
+    function openNode(nodeId, pushHistory) {
+      const node = nodeMap.get(nodeId);
+      if (!node) return;
+      if (pushHistory && currentNodeId && currentNodeId !== nodeId) {
+        historyStack.push(currentNodeId);
+      }
+      currentNodeId = nodeId;
+
+      const title = node.title || node.function_name;
+      viewerTitleWrapEl.innerHTML = "";
+
+      const eyebrow = document.createElement("div");
+      eyebrow.className = "eyebrow";
+      eyebrow.textContent = "Scene";
+      viewerTitleWrapEl.appendChild(eyebrow);
+
+      const h1 = document.createElement("h1");
+      h1.textContent = title;
+      viewerTitleWrapEl.appendChild(h1);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${node.relative_path}:${node.start_line} · ${node.function_name}`;
+      viewerTitleWrapEl.appendChild(meta);
+
+      const chips = document.createElement("div");
+      chips.className = "chips";
+      chips.appendChild(makeMetaChip(`Buttons: ${(node.buttons || []).length}`));
+      chips.appendChild(makeMetaChip(`Text blocks: ${(node.text_blocks || []).length}`));
+      chips.appendChild(makeMetaChip(`Images: ${(node.images || []).length}`));
+      if (node.derived_from) {
+        chips.appendChild(makeMetaChip(`Derived from ${node.derived_from}`));
+      }
+      if (node.bound_args && Object.keys(node.bound_args).length) {
+        chips.appendChild(makeMetaChip(`Args ${JSON.stringify(node.bound_args)}`));
+      }
+      viewerTitleWrapEl.appendChild(chips);
+
+      viewerBodyEl.innerHTML = "";
+
+      if ((node.notes || []).length) {
+        for (const note of node.notes) {
+          const noteCard = document.createElement("section");
+          noteCard.className = "note-card";
+          const noteText = document.createElement("div");
+          noteText.textContent = note;
+          noteCard.appendChild(noteText);
+          viewerBodyEl.appendChild(noteCard);
+        }
+      }
+
+      for (const block of node.text_blocks || []) {
+        viewerBodyEl.appendChild(createChunk(block));
+      }
+
+      if ((node.images || []).length) {
+        viewerBodyEl.appendChild(createImageSection(node.images));
+      }
+
+      viewerBodyEl.appendChild(createChoicesSection(node));
+      renderSceneList();
+    }
+
+    searchInputEl.addEventListener("input", renderSceneList);
+    backButtonEl.addEventListener("click", () => {
+      const previous = historyStack.pop();
+      if (previous) openNode(previous, false);
+    });
+    homeButtonEl.addEventListener("click", () => {
+      if (nodes.length) openNode(nodes[0].id, true);
+    });
+
+    renderSceneList();
+    if (currentNodeId) openNode(currentNodeId, false);
+  </script>
+</body>
+</html>
