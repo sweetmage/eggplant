@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 winrun.log
+
+# Large Flash source asset (tracked locally only)
+02 - Main FLA - TITS.fla
